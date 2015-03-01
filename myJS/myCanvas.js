@@ -24,7 +24,7 @@ ColorNode.prototype.getRGBColor = function(i, isHSV)
 	var blue  = Math.ceil(Math.sin(this.frequency * i + 4) * this.width + this.center);
 	var color = "rgb(" + red + "," + green + "," + blue+")";
 	if(isHSV == true) {
-		color = this.hsvToRgb(i * this.frequency_hsv, Math.random()*100 + 50, Math.random()*100 + 50);
+		color = this.hsvToRgb(i * this.frequency_hsv, Math.random()*150 + 50, Math.random()*50 + 50);
 		color = "rgb(" + color[0] +","+color[1] +"," + color[2]+")";
 	}
 	//console.log(color);		
@@ -107,12 +107,12 @@ ColorNode.prototype.hsvToRgb = function (h, s, v) {
 /*----------------------------------
 -----------------------------------*/
 
-function CanvasAxis(numEvents, initX, initY)
+function CanvasAxis(numEvents, initX, initY, initZ)
 {
 	this.numEvents = numEvents;
 	this.initX = initX;
 	this.initY = initY;
-
+	this.initZ = initZ;
 	this.eventPos = [];
 }
 
@@ -121,12 +121,12 @@ CanvasAxis.prototype.buildAxes= function( length ) {
    var axes = new THREE.Object3D();
 
    // main coordinate axis
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( length, this.initY, 0 ), 0xFF0000, false ) ); // +X
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( -length, this.initY, 0 ), 0xFF0000, true) ); // -X
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, length, 0 ), 0x00FF00, false ) ); // +Y
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, -length, 0 ), 0x00FF00, true ) ); // -Y
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, this.initY, length ), 0x0000FF, false ) ); // +Z
-    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, this.initY, -length ), 0x0000FF, true ) ); // -Z
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( length, this.initY, this.initZ ), 0x000000, false ) ); // +X
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( -length, this.initY, this.initZ ), 0x000000, true) ); // -X
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, length, this.initZ ), 0x000000, false ) ); // +Y
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, -length, this.initZ ), 0x000000, true ) ); // -Y
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, length ), 0x000000, false ) ); // +Z
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, -length ), 0x000000, true ) ); // -Z
 
     // event axis
     var len = 250;
@@ -154,8 +154,8 @@ CanvasAxis.prototype.buildAxes= function( length ) {
     	}
     	var x = init + len*j;
     	
-   		axes.add( this.buildAxis( new THREE.Vector3( x, this.initY, 0 ), new THREE.Vector3( x, 180, 0 ), 0xFF0000, false ) ); // +X
-    	this.eventPos.push( new THREE.Vector3( x, this.initY, 0 ));
+   		axes.add( this.buildAxis( new THREE.Vector3( x, this.initY, this.initZ ), new THREE.Vector3( x, 580, this.initZ ), 0x000000, true ) ); // +X
+    	this.eventPos.push( new THREE.Vector3( x, this.initY, this.initZ ));
     	j++;
     }
 
@@ -200,10 +200,10 @@ CanvasAxis.prototype.getPos = function(index, cur, total,info)
 	var totalDis = Math.abs(max - min);
 
 	pos.x = min + (totalDis/total)*cur;
-	pos.y = this.eventPos[index].y + 50 +  info[0]*5;
-	pos.z = this.eventPos[index].z;
+	pos.y = this.eventPos[index].y + 50 +  info[0]*8;
+	pos.z = this.eventPos[index].z + 200;
 	if(info[3] == 'l')
-		pos.z = -100;
+		pos.z = this.eventPos[index].z -100;
 
 	return pos;
 }

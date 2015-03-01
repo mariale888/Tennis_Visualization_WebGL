@@ -78,8 +78,8 @@ function init() {
 	numDays = games.length;
 	graph = new Graph();
 	loadPlayers();
-	myAxis = new CanvasAxis(numDays, -600, -250);
-	var axes = myAxis.buildAxes(1000);
+	myAxis = new CanvasAxis(numDays, -700, -450,-900);
+	var axes = myAxis.buildAxes(1400);
 	scene.add(axes);
 }
 
@@ -105,12 +105,18 @@ function addNodes()
 						var n = new Node(index,players[key],info, pos);
 						n.draw(scene);
 						graph.addNode(n);
+
+						if(players[key].nodeGames.length > 0){
+							graph.addEdge(players[key].nodeGames[players[key].nodeGames.length-1],n,true);
+						}
 						players[key].nodeGames.push(n)
 						index += 1;
 					}
 					cur+=1;
 				} 
 				d+=1;
+				if(d >= numDays)
+					graph.drawEdges(scene,5);
 			}
 		);
 	}
@@ -164,23 +170,31 @@ function render() {
 
 		if ( INTERSECTED != intersects[ 0 ].object ) {
 
-			if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+			if ( INTERSECTED && INTERSECTED['name'] == 'node'){
+				//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+				INTERSECTED.material.opacity = INTERSECTED.currentopacity
+				graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
+			}
 
 			INTERSECTED = intersects[ 0 ].object;
-			INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-			INTERSECTED.material.emissive.setHex( 0xff0000 );
-
-			graph.findSame(INTERSECTED,0xff0000 );
+			if(INTERSECTED['name'] == 'node')
+			{
+				INTERSECTED.currentopacity = INTERSECTED.material.opacity;
+				INTERSECTED.material.opacity = 1;
+				//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+				//INTERSECTED.material.emissive.setHex( 0xff0000 );
+				graph.findSame(INTERSECTED,1, new THREE.Vector3( 5, 5, 5 ) );
+			}
 		}
 
 	} else {
 
-		if ( INTERSECTED ){
-			INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-			graph.findSame(INTERSECTED,INTERSECTED.currentHex );
+		if ( INTERSECTED && INTERSECTED['name'] == 'node'){
+			//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+			INTERSECTED.material.opacity = INTERSECTED.currentopacity
+			graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
 		}
 		INTERSECTED = null;
-
 	}
 
 	renderer.render( scene, camera );

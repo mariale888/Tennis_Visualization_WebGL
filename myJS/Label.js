@@ -37,7 +37,7 @@ THREE.Label = function(text, parameters) {
     // when setting a new width
     xc.font = fontsize + " Arial";
     xc.textBaseline = 'top';
-	xc.fillStyle = 'white';
+	  xc.fillStyle = 'black';
     xc.fillText(text, 0, 0);
 
     var geometry = new THREE.BoxGeometry(len, 60, 0);
