@@ -28,13 +28,20 @@ function Node(id, player, info, position)
 {
 	this.id = id;
 	this.player = player;
-	this.info = info;
 	this.isSet  = false;
 	this.weight = 0;
 	this.nodesTo   = [];
 	this.nodesFrom = [];
 	this.position  = position;
 	this.data = {};
+	this.info = {};
+	this.info['total'] = info[0];
+	this.info['pos'] = info[1];
+	this.info['neg'] = info[2];
+	this.info['stat'] = info[3];
+	this.info['oponent'] = info[4];
+
+
 }
 function Edge(source, target,isSame)
 {
@@ -45,7 +52,7 @@ function Edge(source, target,isSame)
   if(this.isSame)
   	this.data.color = this.source.player.pcolor;
   else 
-  	this.data.color = 0xff0000;
+  	this.data.color = 0x000033;
 }
 
 //-----
@@ -68,6 +75,11 @@ Graph.prototype.addEdge = function(source, target, isSame)
 	target.addConnectedFrom(source);
     var edge = new Edge(source, target,isSame);
     this.edges.push(edge);
+    if(isSame == false)
+    {
+    	source.isSet = true;
+    	target.isSet = true;
+    }
     return edge;
   }
   return false;
@@ -122,6 +134,8 @@ Graph.prototype.findSame = function(obj, c,scale)
 	{
 		if(this.nodes[i].data.draw_obj == obj){
 			name = this.nodes[i].player.lastName;
+			this.nodes[i].data.draw_obj.scale.set( scale.x,scale.y,scale.z );
+			this.nodes[i].data.draw_obj.material.opacity = c;
 			break;
 		}
 	}
@@ -239,8 +253,10 @@ Node.prototype.connectedFrom = function(node)
 Edge.prototype.drawLine = function(parent)
 {
 	var parameters = parameters || {};
-	
-	material = new THREE.LineBasicMaterial({ color: this.data.color, transparent:true, opacity:0.7, linewidth: 1.5 });
+	var thick = 1.4;
+	if(this.isSame)
+		thick = 1.8;
+	material = new THREE.LineBasicMaterial({ color: this.data.color, transparent:true, opacity:0.7, linewidth: thick });
 	var geometry = new THREE.Geometry();
 	geometry.vertices.push(this.source.position);
 	geometry.vertices.push(this.target.position);
@@ -270,7 +286,10 @@ Edge.prototype.drawCurve = function(parent, curveRad)
 	mid.y = (this.target.position.y + this.source.position.y )/2 * curveRad;
 	mid.z = (this.target.position.z + this.source.position.z )/2 * curveRad;
 
-	material  = new THREE.LineBasicMaterial({ color: this.data.color, opacity: 1, linewidth: 1.5 });
+	var thick = 1.1;
+	if(this.isSame)
+		thick = 1.8;
+	material  = new THREE.LineBasicMaterial({ color: this.data.color, opacity: 1, linewidth: thick });
 	var curve = new THREE.QuadraticBezierCurve3();
 	curve.v0 = new THREE.Vector3(this.source.position.x, this.source.position.y, this.source.position.z);
 	curve.v1 = mid;

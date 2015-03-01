@@ -114,6 +114,35 @@ function addNodes()
 					}
 					cur+=1;
 				} 
+				//add game edges
+				for (var key in games)
+				{
+					for(var a = 0; a < games[key].length;a++)
+					{
+						var info = games[key][a];
+						if(info.length < 3) continue;
+						//console.log(players[key])
+						//console.log(players[info[4]]);
+						if(players[info[4]] ==null) continue;
+						for(var i = 0;i<players[key].nodeGames.length;i++)
+						{
+							if(players[key].nodeGames[i].isSet)
+								continue;
+							
+							for(var j=0;j<players[info[4]].nodeGames.length;j++)
+							{
+								if(players[info[4]].nodeGames[j]) {
+									if(players[info[4]].nodeGames[j].isSet == true)
+										continue;
+									if(key == players[info[4]].nodeGames[j].info['oponent']){
+										graph.addEdge(players[key].nodeGames[i],players[info[4]].nodeGames[j],false);
+									}
+								}
+							}
+						}
+					}
+				} 
+
 				d+=1;
 				if(d >= numDays)
 					graph.drawEdges(scene,5);
