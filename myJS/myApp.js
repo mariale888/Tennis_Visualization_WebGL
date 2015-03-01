@@ -18,7 +18,7 @@ var graph ;
 var players = [];
 var parent;
 
-
+var numDays = 13;
 
 function init() {
 
@@ -38,13 +38,10 @@ function init() {
 				camera.position.z = 1000;
 	camera.lookAt( scene.position );
 	
-
 	var light = new THREE.DirectionalLight( 0xffffff, 1 );
 	light.position.set( 1, 1, 1 ).normalize();
 	scene.add( light );
 
-
-	
 	raycaster = new THREE.Raycaster();
 
 	renderer = new THREE.WebGLRenderer();
@@ -72,14 +69,14 @@ function init() {
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 
-
 	// laod info
 	var minNeighborhs = 2;
 	var mainNodesInGraph = false;
 	
 	graph = new Graph();
 	loadPlayers();
-	
+	var axes = buildAxes( 1000 );
+	scene.add(axes);
 }
 
 function addNodes()
@@ -101,6 +98,7 @@ function addNodes()
 }
 
 
+
 //function to load players txt file into nodes for the graph
 function loadPlayers()
 {
@@ -108,17 +106,50 @@ function loadPlayers()
 	graph.loadInformation('../../data.txt',
 		// Function when resource is loaded
 		function ( players_data ) {
+			var myColor = new ColorNode(players_data.length);
+
 			for (var i = 0; i < players_data.length; i++) {
-				var p_temp = new Player(players_data[i], Math.random() * 0xf0ffff);
+				var color = myColor.getRGBColor(i, true);
+				var p_temp = new Player(players_data[i], new THREE.Color( color ));
 				players.push(p_temp);
 			} 
 			//ready to load graph
 			addNodes();
 		}
 	);
-
 }
 
+function buildAxes( length ) {
+   var axes = new THREE.Object3D();
+
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( length, 0, 0 ), 0xFF0000, false ) ); // +X
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( -length, 0, 0 ), 0xFF0000, true) ); // -X
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, length, 0 ), 0x00FF00, false ) ); // +Y
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, -length, 0 ), 0x00FF00, true ) ); // -Y
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, length ), 0x0000FF, false ) ); // +Z
+    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -length ), 0x0000FF, true ) ); // -Z
+
+    return axes;
+}
+function buildAxis( src, dst, colorHex, dashed ) {
+        var geom = new THREE.Geometry(),
+            mat; 
+
+        if(dashed) {
+                mat = new THREE.LineDashedMaterial({ linewidth: 3, color: colorHex, dashSize: 3, gapSize: 3 });
+        } else {
+                mat = new THREE.LineBasicMaterial({ linewidth: 3, color: colorHex });
+        }
+
+        geom.vertices.push( src.clone() );
+        geom.vertices.push( dst.clone() );
+        geom.computeLineDistances(); // This one is SUPER important, otherwise dashed lines will appear as simple plain lines
+
+        var axis = new THREE.Line( geom, mat, THREE.LinePieces );
+
+        return axis;
+
+}
 
 function animate() {
 
@@ -130,15 +161,17 @@ function animate() {
 
 
 function render() {
-
 	
-	
+	camera.lookAt( scene.position );
+	camera.updateMatrixWorld();
 	// find intersections
 	controls.update();
-	var vector = new THREE.Vector3( mouse.x, mouse.y, - 1 ).unproject( camera );
+	//var vector = new THREE.Vector3( mouse.x, mouse.y, - 1 ).unproject( camera );
 	var direction = new THREE.Vector3( 0, 0, -1 ).transformDirection( camera.matrixWorld );
 
-	raycaster.set( vector, direction );
+	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
+
+	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 
 	var intersects = raycaster.intersectObjects( scene.children );
 
