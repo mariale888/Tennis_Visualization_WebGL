@@ -27,7 +27,7 @@ ColorNode.prototype.getRGBColor = function(i, isHSV)
 		color = this.hsvToRgb(i * this.frequency_hsv, Math.random()*100 + 50, Math.random()*100 + 50);
 		color = "rgb(" + color[0] +","+color[1] +"," + color[2]+")";
 	}
-	console.log(color);		
+	//console.log(color);		
 	return color;
 }
 
@@ -100,4 +100,110 @@ ColorNode.prototype.hsvToRgb = function (h, s, v) {
 	}
  
 	return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+
+
+/*----------------------------------
+-----------------------------------*/
+
+function CanvasAxis(numEvents, initX, initY)
+{
+	this.numEvents = numEvents;
+	this.initX = initX;
+	this.initY = initY;
+
+	this.eventPos = [];
+}
+
+//Function that makes all axes
+CanvasAxis.prototype.buildAxes= function( length ) {
+   var axes = new THREE.Object3D();
+
+   // main coordinate axis
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( length, this.initY, 0 ), 0xFF0000, false ) ); // +X
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( -length, this.initY, 0 ), 0xFF0000, true) ); // -X
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, length, 0 ), 0x00FF00, false ) ); // +Y
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, -length, 0 ), 0x00FF00, true ) ); // -Y
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, this.initY, length ), 0x0000FF, false ) ); // +Z
+    axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, 0 ), new THREE.Vector3( this.initX, this.initY, -length ), 0x0000FF, true ) ); // -Z
+
+    // event axis
+    var len = 250;
+    var init = this.initX;
+    var j=1;
+    for(var i = 1;i<= this.numEvents;i++)
+    {
+    	if(i ==2)
+    	{
+    		init = init + len*(j-1);
+    		len = 230;
+    		j = 1;
+    	}
+    	if(i == 4)
+    	{
+    		init = init + len*(j-1);
+    		len = 150;
+    		j = 1;
+    	}
+    	if(i == 7)
+    	{
+    		init = init + len*(j-1);
+    		len = 95;
+    		j = 1;
+    	}
+    	var x = init + len*j;
+    	
+   		axes.add( this.buildAxis( new THREE.Vector3( x, this.initY, 0 ), new THREE.Vector3( x, 180, 0 ), 0xFF0000, false ) ); // +X
+    	this.eventPos.push( new THREE.Vector3( x, this.initY, 0 ));
+    	j++;
+    }
+
+    return axes;
+}
+
+//Function to draw created axiss
+CanvasAxis.prototype.buildAxis = function( src, dst, colorHex, dashed ) {
+    var geom = new THREE.Geometry(),
+    mat; 
+
+    if(dashed) {
+            mat = new THREE.LineDashedMaterial({ linewidth: 3, color: colorHex, dashSize: 3, gapSize: 3 });
+    } else {
+            mat = new THREE.LineBasicMaterial({ linewidth: 3, color: colorHex });
+    }
+
+    geom.vertices.push( src.clone() );
+    geom.vertices.push( dst.clone() );
+    geom.computeLineDistances(); // This one is SUPER important, otherwise dashed lines will appear as simple plain lines
+
+    var axis = new THREE.Line( geom, mat, THREE.LinePieces );
+
+    return axis;
+
+}
+function randomIntFromInterval(min,max)
+{
+	console.log(min + " "+ max);
+    return Math.floor(Math.random()*(max-min+1)+min);
+}
+// Function that returns a position depending on info of match
+// index: cur day // cur: cur game // total: total games that day // info:info game
+CanvasAxis.prototype.getPos = function(index, cur, total,info)
+{
+	//console.log(info);
+	var pos = new THREE.Vector3();
+	min = this.initX;
+	max = this.eventPos[index].x;
+	if(index > 0)
+		min = this.eventPos[index-1].x;
+	var totalDis = Math.abs(max - min);
+
+	pos.x = min + (totalDis/total)*cur;
+	pos.y = this.eventPos[index].y + 50 +  info[0]*5;
+	pos.z = this.eventPos[index].z;
+	if(info[3] == 'l')
+		pos.z = -100;
+
+	return pos;
 }

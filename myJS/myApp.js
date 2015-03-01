@@ -14,11 +14,14 @@ var pickingData = [], pickingTexture, pickingScene;
 var mouse = new THREE.Vector2(), INTERSECTED;
 var radius = 100, theta = 0;
 
-var graph ;
-var players = [];
+var graph , myAxis;
+var players = {};
 var parent;
 
 var numDays = 13;
+var games = ['usopen_25','usopen_26','usopen_27','usopen_28',
+			'usopen_29','usopen_30','usopen_31','usopen_01',
+			'usopen_02','usopen_03','usopen_04','usopen_05','usopen_07'];
 
 function init() {
 
@@ -72,31 +75,46 @@ function init() {
 	// laod info
 	var minNeighborhs = 2;
 	var mainNodesInGraph = false;
-	
+	numDays = games.length;
 	graph = new Graph();
 	loadPlayers();
-	var axes = buildAxes( 1000 );
+	myAxis = new CanvasAxis(numDays, -600, -250);
+	var axes = myAxis.buildAxes(1000);
 	scene.add(axes);
 }
 
 function addNodes()
 {
-	var initX = window.innerWidth /-2 + 100;
-	var initY = window.innerHeight/ -2 + 150;
-	console.log(initY);
-	console.log("load");
-	for (var i = 0; i < players.length; i++) {
-		var x = initX + i*20;
-		var y = initY + Math.random()*400;
-		var z = -300;//Math.random() * Math.random() * 800 - 400;
-		var vec = new THREE.Vector3( x, y, z );
-		var n = new Node(i, players[i], vec);
-		
-		n.draw(scene);
-		graph.addNode(n);
-	} 
+	var index = 0;
+	var d = 0;
+	for(var i = 0;i <numDays;i++)
+	{
+		var file_name = '../../CleanData/' + games[i] + '.txt';
+		graph.loadInformation(file_name,
+			// Function when resource is loaded
+			function ( games ) {
+				var cur = 0;
+				var totalL =Object.keys(games).length;
+				for (var key in games)
+				{
+					for(var a = 0; a < games[key].length;a++)
+					{
+						var info = games[key][a];
+						var pos = myAxis.getPos(d,a + cur,totalL,info);
+						//console.log(pos);
+						var n = new Node(index,players[key],info, pos);
+						n.draw(scene);
+						graph.addNode(n);
+						players[key].nodeGames.push(n)
+						index += 1;
+					}
+					cur+=1;
+				} 
+				d+=1;
+			}
+		);
+	}
 }
-
 
 
 //function to load players txt file into nodes for the graph
@@ -110,45 +128,15 @@ function loadPlayers()
 
 			for (var i = 0; i < players_data.length; i++) {
 				var color = myColor.getRGBColor(i, true);
-				var p_temp = new Player(players_data[i], new THREE.Color( color ));
-				players.push(p_temp);
+				var name = players_data[i].split(' ');
+				var p_temp = new Player(name[1],name[0], new THREE.Color( color ));
+
+				players[name[0]] = (p_temp);
 			} 
 			//ready to load graph
 			addNodes();
 		}
 	);
-}
-
-function buildAxes( length ) {
-   var axes = new THREE.Object3D();
-
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( length, 0, 0 ), 0xFF0000, false ) ); // +X
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( -length, 0, 0 ), 0xFF0000, true) ); // -X
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, length, 0 ), 0x00FF00, false ) ); // +Y
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, -length, 0 ), 0x00FF00, true ) ); // -Y
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, length ), 0x0000FF, false ) ); // +Z
-    axes.add( buildAxis( new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, -length ), 0x0000FF, true ) ); // -Z
-
-    return axes;
-}
-function buildAxis( src, dst, colorHex, dashed ) {
-        var geom = new THREE.Geometry(),
-            mat; 
-
-        if(dashed) {
-                mat = new THREE.LineDashedMaterial({ linewidth: 3, color: colorHex, dashSize: 3, gapSize: 3 });
-        } else {
-                mat = new THREE.LineBasicMaterial({ linewidth: 3, color: colorHex });
-        }
-
-        geom.vertices.push( src.clone() );
-        geom.vertices.push( dst.clone() );
-        geom.computeLineDistances(); // This one is SUPER important, otherwise dashed lines will appear as simple plain lines
-
-        var axis = new THREE.Line( geom, mat, THREE.LinePieces );
-
-        return axis;
-
 }
 
 function animate() {
@@ -168,13 +156,10 @@ function render() {
 	controls.update();
 	//var vector = new THREE.Vector3( mouse.x, mouse.y, - 1 ).unproject( camera );
 	var direction = new THREE.Vector3( 0, 0, -1 ).transformDirection( camera.matrixWorld );
-
 	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
 
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
-
 	var intersects = raycaster.intersectObjects( scene.children );
-
 	if ( intersects.length > 0 ) {
 
 		if ( INTERSECTED != intersects[ 0 ].object ) {
@@ -185,12 +170,15 @@ function render() {
 			INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
 			INTERSECTED.material.emissive.setHex( 0xff0000 );
 
+			graph.findSame(INTERSECTED,0xff0000 );
 		}
 
 	} else {
 
-		if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
+		if ( INTERSECTED ){
+			INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+			graph.findSame(INTERSECTED,INTERSECTED.currentHex );
+		}
 		INTERSECTED = null;
 
 	}

@@ -6,11 +6,13 @@
 **/
 
 // players info
-function Player(firstName, pcolor)
+function Player(firstName,lastName, pcolor)
 {
-	this.name = name;
+	this.firstName = firstName;
+	this.lastName = lastName;
+
 	this.pcolor = pcolor;
-	this.nodeGames = {};
+	this.nodeGames = [];
 }
 
 
@@ -21,10 +23,11 @@ function Graph()
 	this.edges = [];
 }
 
-function Node(id, player, position)
+function Node(id, player, info, position)
 {
 	this.id = id;
 	this.player = player;
+	this.info = info;
 	this.isSet  = false;
 	this.weight = 0;
 	this.nodesTo   = [];
@@ -90,10 +93,23 @@ Graph.prototype.loadInformation = function(url, callback)
 	xhr.send( null );
 };
 
+Graph.prototype.findSame = function(obj, c)
+{
+	for(var i = 0; i < this.nodes.length; i++)
+	{
+		if(this.nodes[i].data.draw_obj == obj){
+			console.log(this.nodes[i].player.lastName);
+			for(var j=0;j < this.nodes[i].player.nodeGames.length;j++)
+			{
+				this.nodes[i].player.nodeGames[j].data.draw_obj.material.emissive.setHex( c);
+			}
+		}
+	}
+}
 Node.prototype.draw = function(scene, nodes)
 {
 
-	var width = 20;
+	var width = 10;
 	var geometry = new THREE.BoxGeometry( width, width, width );
 	var material =  new THREE.MeshLambertMaterial( { color: this.player.pcolor });
 	//	var material = new THREE.MeshBasicMaterial( { color: this.player.pcolor, opacity: 0.7  } );
@@ -112,7 +128,7 @@ Node.prototype.draw = function(scene, nodes)
 		var label = new THREE.Label("temp label", textOpt);	
 	}
 	else{
-		var label = new THREE.Label(this.player.name, textOpt);	
+		var label = new THREE.Label(this.player.lastName, textOpt);	
 	}
 	
 	label.position.x = draw_obj.position.x;
@@ -120,7 +136,7 @@ Node.prototype.draw = function(scene, nodes)
 	label.position.z = draw_obj.position.z;
 		
 	this.data.label_object = label;
-	scene.add( this.data.label_object );
+	//scene.add( this.data.label_object );
 	
 	draw_obj.name = this.data.name;
 	draw_obj.id   = this.id;
