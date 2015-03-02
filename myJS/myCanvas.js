@@ -102,8 +102,6 @@ ColorNode.prototype.hsvToRgb = function (h, s, v) {
 	return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-
-
 /*----------------------------------
 -----------------------------------*/
 
@@ -117,7 +115,7 @@ function CanvasAxis(numEvents, initX, initY, initZ)
 }
 
 //Function that makes all axes
-CanvasAxis.prototype.buildAxes= function( length ) {
+CanvasAxis.prototype.buildAxes= function( length, dates ) {
    var axes = new THREE.Object3D();
 
    // main coordinate axis
@@ -128,10 +126,11 @@ CanvasAxis.prototype.buildAxes= function( length ) {
     axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, length ), 0x000000, false ) ); // +Z
     axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, -length ), 0x000000, true ) ); // -Z
 
-    // event axis
+    // event axis and labels
     var len = 250;
     var init = this.initX;
     var j=1;
+    var past = init;
     for(var i = 1;i<= this.numEvents;i++)
     {
     	if(i ==2)
@@ -153,7 +152,17 @@ CanvasAxis.prototype.buildAxes= function( length ) {
     		j = 1;
     	}
     	var x = init + len*j;
-    	
+    	// label
+    	var textOpt = ["30pt", "", ""];
+    	var label = new THREE.Label(dates[i-1], textOpt);	
+    	label.position.x =  past +  Math.abs(x - past)/2;
+	  	label.position.y = this.initY -75;
+	  	label.position.z = this.initZ;
+		label.rotation.z = 0.5;
+		past = x;
+		axes.add(label);
+		//-----
+
    		axes.add( this.buildAxis( new THREE.Vector3( x, this.initY, this.initZ ), new THREE.Vector3( x, 580, this.initZ ), 0x000000, true ) ); // +X
     	this.eventPos.push( new THREE.Vector3( x, this.initY, this.initZ ));
     	j++;

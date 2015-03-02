@@ -1,7 +1,7 @@
 /**
   @author Maria Alejandra Montenegro
 
-  Implementation of graph visualisations.
+  Implementation of graph visualizations.
   Consists of Graph, Nodes and Edges and different 
   types of Layouts.
 **/
@@ -23,6 +23,10 @@ var games = ['usopen_25','usopen_26','usopen_27','usopen_28',
 			'usopen_29','usopen_30','usopen_31','usopen_01',
 			'usopen_02','usopen_03','usopen_04','usopen_05','usopen_07'];
 
+var game_date = ['08/25/2014','08/26/2014','08/27/2014','08/28/2014',
+			'08/29/2014','08/30/2014','08/31/2014','09/01/2014',
+			'09/02/2014','09/03/2014','09/04/2014','09/05/2014','09/07/2014'];
+
 function init() {
 
 	container = document.createElement( 'div' );
@@ -33,7 +37,7 @@ function init() {
 	info.style.top = '10px';
 	info.style.width = '100%';
 	info.style.textAlign = 'center';
-	info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> webgl - interactive cubes';
+	info.innerHTML = "<h2> USOPEN Womens Twitter Popularity -webGL/Three.js  </h2> <h3 id='players'>Select a Player</h3>";
 	container.appendChild( info );
 	
 	scene = new THREE.Scene();
@@ -72,14 +76,14 @@ function init() {
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 
-	// laod info
+	// load info
 	var minNeighborhs = 2;
 	var mainNodesInGraph = false;
 	numDays = games.length;
 	graph = new Graph();
 	loadPlayers();
 	myAxis = new CanvasAxis(numDays, -700, -450,-900);
-	var axes = myAxis.buildAxes(1400);
+	var axes = myAxis.buildAxes(1400, game_date);	
 	scene.add(axes);
 }
 
@@ -110,6 +114,7 @@ function addNodes()
 							graph.addEdge(players[key].nodeGames[players[key].nodeGames.length-1],n,true);
 						}
 						players[key].nodeGames.push(n)
+
 						index += 1;
 					}
 					cur+=1;
@@ -120,21 +125,16 @@ function addNodes()
 					for(var a = 0; a < games[key].length;a++)
 					{
 						var info = games[key][a];
-						if(info.length < 3) continue;
-						//console.log(players[key])
-						//console.log(players[info[4]]);
-						if(players[info[4]] ==null) continue;
 						for(var i = 0;i<players[key].nodeGames.length;i++)
 						{
 							if(players[key].nodeGames[i].isSet)
 								continue;
-							
 							for(var j=0;j<players[info[4]].nodeGames.length;j++)
 							{
 								if(players[info[4]].nodeGames[j]) {
 									if(players[info[4]].nodeGames[j].isSet == true)
 										continue;
-									if(key == players[info[4]].nodeGames[j].info['oponent']){
+									if(key == players[info[4]].nodeGames[j].info['opponent']){
 										graph.addEdge(players[key].nodeGames[i],players[info[4]].nodeGames[j],false);
 									}
 								}
@@ -182,7 +182,6 @@ function animate() {
 	stats.update();
 }
 
-
 function render() {
 	
 	camera.lookAt( scene.position );
@@ -203,6 +202,7 @@ function render() {
 				//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 				INTERSECTED.material.opacity = INTERSECTED.currentopacity
 				graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
+				$('#players').html('Select a player');
 			}
 
 			INTERSECTED = intersects[ 0 ].object;
@@ -212,8 +212,10 @@ function render() {
 				INTERSECTED.material.opacity = 1;
 				//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
 				//INTERSECTED.material.emissive.setHex( 0xff0000 );
-				graph.findSame(INTERSECTED,1, new THREE.Vector3( 5, 5, 5 ) );
+				name =graph.findSame(INTERSECTED,1, new THREE.Vector3( 4, 4, 4 ) );
+				$('#players').html(name);
 			}
+
 		}
 
 	} else {
@@ -222,6 +224,8 @@ function render() {
 			//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 			INTERSECTED.material.opacity = INTERSECTED.currentopacity
 			graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
+			$('#players').html('Select a player');
+
 		}
 		INTERSECTED = null;
 	}

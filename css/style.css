@@ -2,16 +2,21 @@
 
 body {
 	background-color: black;
-	color: #FFFFFF;
+	color: #001933;
 }
 
+h3#players
+{
+	float:left;
+	padding-left: 10px;
+}
 .Controllers
 {
 	width: 18%;
 	background-color: #708090;
 }
 .Controllers input[type="radio"] + label, label {
-	color: #FFFFFF;
+	color: #001933;
 }
 
 #MyGraph {

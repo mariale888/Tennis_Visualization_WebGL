@@ -15,7 +15,6 @@ function Player(firstName,lastName, pcolor)
 	this.nodeGames = [];
 }
 
-
 function Graph()
 {
 	this.nodeSet = {};
@@ -39,7 +38,7 @@ function Node(id, player, info, position)
 	this.info['pos'] = info[1];
 	this.info['neg'] = info[2];
 	this.info['stat'] = info[3];
-	this.info['oponent'] = info[4];
+	this.info['opponent'] = info[4];
 
 
 }
@@ -134,8 +133,7 @@ Graph.prototype.findSame = function(obj, c,scale)
 	{
 		if(this.nodes[i].data.draw_obj == obj){
 			name = this.nodes[i].player.lastName;
-			this.nodes[i].data.draw_obj.scale.set( scale.x,scale.y,scale.z );
-			this.nodes[i].data.draw_obj.material.opacity = c;
+			this.nodes[i].update(scale,c);
 			break;
 		}
 	}
@@ -144,14 +142,15 @@ Graph.prototype.findSame = function(obj, c,scale)
 	{
 		if(this.edges[i].source.player.lastName == name && this.edges[i].target.player.lastName == name)
 		{
-			this.edges[i].source.data.draw_obj.scale.set( scale.x,scale.y,scale.z );
-			this.edges[i].target.data.draw_obj.scale.set( scale.x,scale.y,scale.z );
-			this.edges[i].source.data.draw_obj.material.opacity = c;
-			this.edges[i].target.data.draw_obj.material.opacity = c;
+			this.edges[i].source.update(scale,c);
+			this.edges[i].target.update(scale,c);
 			this.edges[i].update(scale,c);
 		}
 	}
+
+	return name;
 }
+
 Graph.prototype.drawEdges = function(scene,rad)
 {
 	//drawing edges as curve
@@ -162,13 +161,23 @@ Graph.prototype.drawEdges = function(scene,rad)
 			e.drawCurve(scene,rad);
 		else
 			e.drawLine(scene);
-	}
-	
+	}	
+};
+
+Node.prototype.update = function(scale, opacity)
+{
+	var label_scale = 0;
+	if(scale.x > 1)
+		label_scale = 1;
+	this.data.draw_obj.material.opacity = opacity;
+	this.data.draw_obj.scale.set( scale.x,scale.y,scale.z );
+	this.data.label_object.material.opacity = label_scale;
+
 };
 Node.prototype.draw = function(scene, nodes)
 {
 
-	var width = 10;
+	var width = 15;
 	var geometry = new THREE.BoxGeometry( width, width, width );
 	//var material =  new THREE.MeshLambertMaterial( { color: this.player.pcolor });
 		var material = new THREE.MeshBasicMaterial( { color: this.player.pcolor, transparent:true, opacity:0.7 } );
@@ -180,7 +189,7 @@ Node.prototype.draw = function(scene, nodes)
 	draw_obj.position.z = this.position.z;
 
 	
-	var textOpt = ["20pt", "", ""];
+	var textOpt = ["40pt", "", ""];
 	
 	if(this.player.lastName === undefined)
 	{
@@ -191,12 +200,13 @@ Node.prototype.draw = function(scene, nodes)
 	}
 	
 	label.position.x = draw_obj.position.x;
-  	label.position.y = draw_obj.position.y +0;
-	label.position.z = draw_obj.position.z;
+  	label.position.y = draw_obj.position.y +40;
+	label.position.z = draw_obj.position.z - 10;
 		
 	this.data.label_object = label;
+	this.data.label_object.material.opacity = 0;
 	this.data.label_object.name = 'label';
-	//scene.add( this.data.label_object );
+	scene.add( this.data.label_object );
 	
 	draw_obj.name = 'node';
 	draw_obj.id   = this.id;
@@ -273,7 +283,7 @@ Edge.prototype.update = function(scale,c)
 {
 	this.data.draw_obj.material.opacity = c;
 	this.data.draw_obj.material.linewidth =  scale.x + 0.5;
-}
+};
 Edge.prototype.drawCurve = function(parent, curveRad)
 {
 	var parameters = parameters || {};
