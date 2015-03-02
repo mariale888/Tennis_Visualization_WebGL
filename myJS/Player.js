@@ -13,6 +13,11 @@ function Player(firstName,lastName, pcolor)
 
 	this.pcolor = pcolor;
 	this.nodeGames = [];
+
+	this.fullName = function()
+	{
+		return this.lastName + ' ' + this.firstName;
+	}
 }
 
 function Graph()
@@ -132,7 +137,7 @@ Graph.prototype.findSame = function(obj, c,scale)
 	for(var i = 0; i < this.nodes.length; i++)
 	{
 		if(this.nodes[i].data.draw_obj == obj){
-			name = this.nodes[i].player.lastName;
+			name = this.nodes[i].player.fullName();
 			this.nodes[i].update(scale,c);
 			break;
 		}
@@ -140,7 +145,7 @@ Graph.prototype.findSame = function(obj, c,scale)
 	
 	for(var i = 0;i< this.edges.length;i++)
 	{
-		if(this.edges[i].source.player.lastName == name && this.edges[i].target.player.lastName == name)
+		if(this.edges[i].source.player.fullName() == name && this.edges[i].target.player.fullName() == name)
 		{
 			this.edges[i].source.update(scale,c);
 			this.edges[i].target.update(scale,c);
@@ -166,12 +171,16 @@ Graph.prototype.drawEdges = function(scene,rad)
 
 Node.prototype.update = function(scale, opacity)
 {
-	var label_scale = 0;
-	if(scale.x > 1)
+	var label_scale = 0.1;
+	var label_opacity = 0;
+	if(scale.x > 1){
 		label_scale = 1;
+		label_opacity = 1;
+	}
 	this.data.draw_obj.material.opacity = opacity;
 	this.data.draw_obj.scale.set( scale.x,scale.y,scale.z );
-	this.data.label_object.material.opacity = label_scale;
+	this.data.label_object.material.opacity = label_opacity;
+	this.data.label_object.scale.set( label_scale,label_scale,label_scale );
 
 };
 Node.prototype.draw = function(scene, nodes)
@@ -196,7 +205,7 @@ Node.prototype.draw = function(scene, nodes)
 		var label = new THREE.Label("temp label", textOpt);	
 	}
 	else{
-		var label = new THREE.Label(this.player.lastName, textOpt);	
+		var label = new THREE.Label(this.player.fullName(), textOpt);	
 	}
 	
 	label.position.x = draw_obj.position.x;
@@ -204,6 +213,7 @@ Node.prototype.draw = function(scene, nodes)
 	label.position.z = draw_obj.position.z - 10;
 		
 	this.data.label_object = label;
+	this.data.label_object.scale.set(0.1,0.1,0.1);
 	this.data.label_object.material.opacity = 0;
 	this.data.label_object.name = 'label';
 	scene.add( this.data.label_object );

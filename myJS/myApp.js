@@ -27,6 +27,23 @@ var game_date = ['08/25/2014','08/26/2014','08/27/2014','08/28/2014',
 			'08/29/2014','08/30/2014','08/31/2014','09/01/2014',
 			'09/02/2014','09/03/2014','09/04/2014','09/05/2014','09/07/2014'];
 
+
+
+
+var group,isDragX, isDragY;
+
+var targetRotation = 0;
+var targetRotationOnMouseDown = 0;
+
+var mouseX = 0;
+var mouseXOnMouseDown = 0;
+
+var mouseY = 0;
+var mouseYOnMouseDown = 0;
+
+var windowHalfX = window.innerWidth / 2;
+var windowHalfY = window.innerHeight / 2;
+
 function init() {
 
 	container = document.createElement( 'div' );
@@ -42,7 +59,8 @@ function init() {
 	
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 10000 );
-				camera.position.z = 1000;
+	camera.position.set( 0, 150, 2200 );
+	//camera.position.z = 1000;
 	camera.lookAt( scene.position );
 	
 	var light = new THREE.DirectionalLight( 0xffffff, 1 );
@@ -73,18 +91,28 @@ function init() {
 	controls.dynamicDampingFactor = 0.3;
 
 	//adding mouse stuff
+	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 
 	// load info
+	isDragX = false;
+	isDragY = false;
+	group = new THREE.Group();
 	var minNeighborhs = 2;
 	var mainNodesInGraph = false;
 	numDays = games.length;
 	graph = new Graph();
 	loadPlayers();
-	myAxis = new CanvasAxis(numDays, -700, -450,-900);
+	myAxis = new CanvasAxis(numDays, -800, -450,0);
 	var axes = myAxis.buildAxes(1400, game_date);	
-	scene.add(axes);
+	group.add(axes);
+
+	scene.add( group );
 }
 
 function addNodes()
@@ -107,7 +135,7 @@ function addNodes()
 						var pos = myAxis.getPos(d,a + cur,totalL,info);
 						//console.log(pos);
 						var n = new Node(index,players[key],info, pos);
-						n.draw(scene);
+						n.draw( group);
 						graph.addNode(n);
 
 						if(players[key].nodeGames.length > 0){
@@ -136,6 +164,7 @@ function addNodes()
 										continue;
 									if(key == players[info[4]].nodeGames[j].info['opponent']){
 										graph.addEdge(players[key].nodeGames[i],players[info[4]].nodeGames[j],false);
+										//console.log(players[key].nodeGames[i].info['opponent'] + ' ' + players[info[4]].nodeGames[j].info['opponent'])
 									}
 								}
 							}
@@ -145,7 +174,7 @@ function addNodes()
 
 				d+=1;
 				if(d >= numDays)
-					graph.drawEdges(scene,5);
+					graph.drawEdges(group,5);
 			}
 		);
 	}
@@ -165,8 +194,8 @@ function loadPlayers()
 				var color = myColor.getRGBColor(i, true);
 				var name = players_data[i].split(' ');
 				var p_temp = new Player(name[1],name[0], new THREE.Color( color ));
-
-				players[name[0]] = (p_temp);
+				var key = name[0]+'_'+name[1];
+				players[key] = (p_temp);
 			} 
 			//ready to load graph
 			addNodes();
@@ -187,13 +216,19 @@ function render() {
 	camera.lookAt( scene.position );
 	camera.updateMatrixWorld();
 	// find intersections
-	controls.update();
+	//controls.update();
+
+	if(isDragX)
+		group.rotation.y += ( targetRotation - group.rotation.y) * 0.05;
+	if(isDragY)
+		group.rotation.x += ( targetRotation - group.rotation.x) * 0.05;
+
 	//var vector = new THREE.Vector3( mouse.x, mouse.y, - 1 ).unproject( camera );
 	var direction = new THREE.Vector3( 0, 0, -1 ).transformDirection( camera.matrixWorld );
 	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
 
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
-	var intersects = raycaster.intersectObjects( scene.children );
+	var intersects = raycaster.intersectObjects( group.children );
 	if ( intersects.length > 0 ) {
 
 		if ( INTERSECTED != intersects[ 0 ].object ) {
@@ -254,4 +289,83 @@ function onDocumentMouseMove( event ) {
 	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
+	if(isDragX )
+	{
+		mouseX = event.clientX - windowHalfX;
+		targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+	}
+	if(isDragY)
+	{
+		mouseY = event.clientY - windowHalfY;
+		targetRotation = targetRotationOnMouseDown + ( mouseY - mouseYOnMouseDown ) * 0.02;
+	}
+}
+
+
+function onDocumentMouseDown( event ) {
+
+	event.preventDefault();
+	
+	isDragX = true;
+	if(event.button == 2){
+		isDragY = true;
+		isDragX = false;
+	}
+
+	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+	document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+
+	mouseXOnMouseDown = event.clientX - windowHalfX;
+	mouseYOnMouseDown = event.clientY - windowHalfY;
+
+	targetRotationOnMouseDown = targetRotation;
+
+}
+
+function onDocumentMouseUp( event ) {
+
+	isDragX = false;
+	isDragY = false;
+	document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+	document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+}
+
+function onDocumentMouseOut( event ) {
+
+	document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+	document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+	document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+}
+
+function onDocumentTouchStart( event ) {
+
+	if ( event.touches.length == 1 ) {
+
+		event.preventDefault();
+		mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
+		mouseYOnMouseDown = event.touches[ 0 ].pageY - windowHalfY;
+		targetRotationOnMouseDown = targetRotation;
+
+	}
+	else
+	{
+		console.log('s');
+	}
+
+}
+
+function onDocumentTouchMove( event ) {
+
+	if ( event.touches.length == 1 ) {
+
+		event.preventDefault();
+
+		mouseX = event.touches[ 0 ].pageX - windowHalfX;
+		targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+
+	}
+else
+	{
+		console.log('s');
+	}
 }
