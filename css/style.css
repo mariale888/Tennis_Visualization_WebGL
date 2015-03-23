@@ -3,12 +3,30 @@
 body {
 	background-color: black;
 	color: #001933;
+
 }
 
 h3#players
 {
-	float:left;
-	padding-left: 10px;
+	float:right;
+	font-size: 18px;
+	padding-right: 150px;
+	margin-bottom:0px;
+	padding-bottom: 0px;
+}
+
+
+#text { font-size: 15px; }
+#tt { font-size: 18px; }
+#pos
+{
+	color:#FFBF00;
+	font-size: 20px;
+}
+#neg
+{
+	color:#5858FA;
+	font-size: 20px;
 }
 .Controllers
 {

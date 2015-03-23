@@ -16,6 +16,16 @@ function ColorNode(total)
 	this.width = 127;
 }
 
+ColorNode.prototype.map = function ( num, in_min , in_max , out_min , out_max ) {
+  return ( num - in_min ) * ( out_max - out_min ) / ( in_max - in_min ) + out_min;
+}
+ColorNode.prototype.getColorChroma = function(i, color1, color2)
+{
+	var index = this.map(i, 0,this.total *0.25,0,1);
+	//console.log(index);
+	var color = chroma.interpolate(color1, color2,index).css();
+	return color;
+}
 // Function to get a unique random color from total batch
 ColorNode.prototype.getRGBColor = function(i, isHSV)
 {
@@ -27,7 +37,6 @@ ColorNode.prototype.getRGBColor = function(i, isHSV)
 		color = this.hsvToRgb(i * this.frequency_hsv, Math.random()*150 + 50, Math.random()*50 + 50);
 		color = "rgb(" + color[0] +","+color[1] +"," + color[2]+")";
 	}
-	//console.log(color);		
 	return color;
 }
 
@@ -105,13 +114,15 @@ ColorNode.prototype.hsvToRgb = function (h, s, v) {
 /*----------------------------------
 -----------------------------------*/
 
-function CanvasAxis(numEvents, initX, initY, initZ)
+function CanvasAxis(numEvents, initX, initY, initZ, isCircle)
 {
 	this.numEvents = numEvents;
 	this.initX = initX;
 	this.initY = initY;
 	this.initZ = initZ;
 	this.eventPos = [];
+	this.isCircle = isCircle;
+	this.counter = 0;
 }
 
 //Function that makes all axes
@@ -126,47 +137,96 @@ CanvasAxis.prototype.buildAxes= function( length, dates ) {
     axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, length ), 0x000000, false ) ); // +Z
     axes.add( this.buildAxis( new THREE.Vector3( this.initX, this.initY, this.initZ ), new THREE.Vector3( this.initX, this.initY, -length ), 0x000000, true ) ); // -Z
 
-    // event axis and labels
+    //-------------
+    // Event axis and labels
+    //--------------
+
+    //X-Axis 
     var len = 250;
+    if(this.isCircle) 
+    	len = 700;
+
     var init = this.initX;
     var j=1;
     var past = init;
-    for(var i = 1;i<= this.numEvents;i++)
+    for(var i = 1; i <= this.numEvents;i++)
     {
-    	if(i ==2)
-    	{
-    		init = init + len*(j-1);
-    		len = 230;
-    		j = 1;
-    	}
-    	if(i == 4)
-    	{
-    		init = init + len*(j-1);
-    		len = 150;
-    		j = 1;
-    	}
-    	if(i == 7)
-    	{
-    		init = init + len*(j-1);
-    		len = 95;
-    		j = 1;
-    	}
+    	if(!this.isCircle) {
+	    	if(i ==2)
+	    	{
+	    		init = init + len*(j-1);
+	    		len = 230;
+	    		j = 1;
+	    	}
+	    	if(i == 4)
+	    	{
+	    		init = init + len*(j-1);
+	    		len = 150;
+	    		j = 1;
+	    	}
+	    	if(i == 7)
+	    	{
+	    		init = init + len*(j-1);
+	    		len = 95;
+	    		j = 1;
+	    	}
+	    }
+	    else {
+	    	//the FINAL
+	    	if(i == 13)
+	    	{
+	    		init = init + len*(j-1);
+	    		len = 1200;
+	    		j = 1;
+	    	}
+	    }
     	var x = init + len*j;
-    	// label
-    	var textOpt = ["30pt", "", ""];
-    	var label = new THREE.Label(dates[i-1], textOpt);	
-    	label.position.x =  past +  Math.abs(x - past)/2;
-	  	label.position.y = this.initY -75;
-	  	label.position.z = this.initZ;
+    	// X Label Axis
+    	var textOpt = ["30ox","",""];
+    	var delta = 95;
+    	if(this.isCircle) {
+	    	textOpt = ["80pt", "", ""];
+	    	delta = 200;
+	    }
+	    var label = new THREE.Label(dates[i-1], textOpt);	
+	    label.position.x =  past +  Math.abs(x - past)/2;
+		label.position.y = this.initY - delta;
+		label.position.z = this.initZ;
 		label.rotation.z = 0.5;
 		past = x;
 		axes.add(label);
+		
 		//-----
 
    		axes.add( this.buildAxis( new THREE.Vector3( x, this.initY, this.initZ ), new THREE.Vector3( x, 580, this.initZ ), 0x000000, true ) ); // +X
     	this.eventPos.push( new THREE.Vector3( x, this.initY, this.initZ ));
     	j++;
     }
+
+    // Y Label Axis
+    if(!this.isCircle) {
+	    var num = 15;
+	    var len = 60;
+	    for(var i = 1; i <= 100;i++)
+	    {	
+	    	var y = this.initY + len * i;
+	    	// label
+	    	
+		    var textOpt = ["30pt", "", ""];
+		    var label = new THREE.Label(num, textOpt);	
+		    label.position.x =  this.initX - 100;
+			label.position.y = y;
+			label.position.z = this.initZ;
+			past = x;
+			axes.add(label);
+			num = num + 15;
+			len = 80;
+			
+			//-----
+	   		axes.add( this.buildAxis( new THREE.Vector3( this.initX, y, this.initZ ), new THREE.Vector3( this.initX - 100, y, this.initZ ), 0x000000, true ) ); // +X
+	    	this.eventPos.push( new THREE.Vector3( this.initX, y, this.initZ ));
+	    }
+	}
 
     return axes;
 }
@@ -198,21 +258,45 @@ function randomIntFromInterval(min,max)
 }
 // Function that returns a position depending on info of match
 // index: cur day // cur: cur game // total: total games that day // info:info game
-CanvasAxis.prototype.getPos = function(index, cur, total,info)
+CanvasAxis.prototype.getPos = function(index, cur, total, info, y_player)
 {
-	//console.log(info);
 	var pos = new THREE.Vector3();
-	min = this.initX;
-	max = this.eventPos[index].x;
+	var min = this.initX;
+	var max = this.eventPos[index].x;
 	if(index > 0)
 		min = this.eventPos[index-1].x;
 	var totalDis = Math.abs(max - min);
 
-	pos.x = min + (totalDis/total)*cur;
-	pos.y = this.eventPos[index].y + 50 +  info[0]*8;
-	pos.z = this.eventPos[index].z + 200;
-	if(info[3] == 'l')
-		pos.z = this.eventPos[index].z -100;
+	//old vis with lines
+	if(!this.isCircle) {
+		pos.x = min + (totalDis/total)*cur;
+		pos.y = this.eventPos[index].y + 80 +  info[0]*9;
+		
+		pos.z = this.eventPos[index].z + 200;
+		if(info[3] == 'l')
+			pos.z = this.eventPos[index].z -100;
+	}
+	//new vis
+	else {
+		var delta = -150;
+		if(index == 12) delta = -350;   // the FINAL
+		if(info[3] == 'w'){
+			delta *= -1;
+		}
+		this.counter +=1;
+		pos.x = (min + max) * 0.5 + delta;
 
+		delta = 110;
+		if(index > 2)delta = 150;
+
+		if(this.counter%2 == 0)
+			pos.y = 60 + (this.counter) * delta;
+		else
+			pos.y = 60 - (this.counter) * delta;
+		//pos.y = this.eventPos[index].y + (total - cur) * 15;
+		if(y_player != null)
+			pos.y = y_player;
+	
+	}
 	return pos;
 }

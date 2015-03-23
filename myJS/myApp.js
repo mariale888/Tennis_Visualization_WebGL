@@ -44,6 +44,8 @@ var mouseYOnMouseDown = 0;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
+var isCircle = true;
+
 function init() {
 
 	container = document.createElement( 'div' );
@@ -54,12 +56,12 @@ function init() {
 	info.style.top = '10px';
 	info.style.width = '100%';
 	info.style.textAlign = 'center';
-	info.innerHTML = "<h2> USOPEN Womens Twitter Popularity -webGL/Three.js  </h2> <h3 id='players'>Select a Player</h3>";
+	info.innerHTML = "<h2> USOPEN Women's Twitter Popularity Per-Game  </h2> <h3 id='players'>Select a Player:</h3> ";
 	container.appendChild( info );
 	
 	scene = new THREE.Scene();
-	camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set( 0, 150, 2200 );
+	camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 50000 );
+	camera.position.set( 0, 150, 10500);//2350 );10500
 	//camera.position.z = 1000;
 	camera.lookAt( scene.position );
 	
@@ -84,13 +86,13 @@ function init() {
 	controls = new THREE.TrackballControls( camera );
 	controls.rotateSpeed = 1.0;
 	controls.zoomSpeed = 1.2;
-	controls.panSpeed = 0.8;
 	controls.noZoom = false;
-	controls.noPan = false;
+	controls.noPan = true;
 	controls.staticMoving = true;
 	controls.dynamicDampingFactor = 0.3;
 
 	//adding mouse stuff
+	document.addEventListener('keydown',onDocumentKeyDown, false);
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
@@ -103,50 +105,85 @@ function init() {
 	isDragX = false;
 	isDragY = false;
 	group = new THREE.Group();
-	var minNeighborhs = 2;
-	var mainNodesInGraph = false;
+	
 	numDays = games.length;
 	graph = new Graph();
 	loadPlayers();
-	myAxis = new CanvasAxis(numDays, -800, -450,0);
-	var axes = myAxis.buildAxes(1400, game_date);	
+	
+	myAxis = new CanvasAxis(numDays, -4700, -1700,0, isCircle);//new CanvasAxis(numDays, -950, -550,0, isCircle);
+	var axes = myAxis.buildAxes(4900, game_date);	
 	group.add(axes);
 
 	scene.add( group );
 }
 
+//Function to add nodes to the graph after reading players data
 function addNodes()
 {
 	var index = 0;
 	var d = 0;
 	for(var i = 0;i <numDays;i++)
 	{
-		var file_name = '../../CleanData/' + games[i] + '.txt';
+		var file_name = 'CleanData/' + games[i] + '.txt';
 		graph.loadInformation(file_name,
 			// Function when resource is loaded
 			function ( games ) {
 				var cur = 0;
-				var totalL =Object.keys(games).length;
-				for (var key in games)
-				{
-					for(var a = 0; a < games[key].length;a++)
+				var totalL = Object.keys(games).length;
+				var myColor = new ColorNode(totalL);
+				
+				var color1 = '#088A08';//'#036564';
+				var color2 = '#64FE2E';//'#00A0B0';
+				var cur_ = 0;
+				//first load winners if iscircle
+				var looking = 'w';
+				var tt = 1;
+				if(isCircle) tt = 2;
+				for( var w = 0;w < tt;w++){
+					for (var key in games)
 					{
-						var info = games[key][a];
-						var pos = myAxis.getPos(d,a + cur,totalL,info);
-						//console.log(pos);
-						var n = new Node(index,players[key],info, pos);
-						n.draw( group);
-						graph.addNode(n);
+						var didPass = true;
+						for(var a = 0; a < games[key].length;a++)
+						{
+							var info = games[key][a];
+							if(info[3]!=looking && isCircle) {
+								didPass = false;
+								continue;
+							}
+							
+							var color = myColor.getColorChroma(cur_,color1,color2);
+				
+							//checking if opponent already set
+							var y_player = null;
+							
+							var opponent_ = graph.getNode_byName(info[4],key);
+							if(opponent_ != null)
+								y_player = opponent_.position.y;
 
-						if(players[key].nodeGames.length > 0){
-							graph.addEdge(players[key].nodeGames[players[key].nodeGames.length-1],n,true);
+							// d: cur day // a: cur game // total: total games that day // info:info game
+							var pos = myAxis.getPos(d,a + cur,totalL,info,y_player);
+							//console.log(pos);
+							var n = new Node(index,players[key],info, pos, isCircle, new THREE.Color( color ));
+							n.draw( group);
+							graph.addNode(n);
+
+							if(players[key].nodeGames.length > 0){
+								graph.addEdge(players[key].nodeGames[players[key].nodeGames.length-1],n,true);
+							}
+							players[key].nodeGames.push(n)
+
+							index += 1;
 						}
-						players[key].nodeGames.push(n)
-
-						index += 1;
-					}
-					cur+=1;
-				} 
+						if(didPass ){
+							cur_+=1;
+							cur+=1;
+						}
+					} 
+					looking = 'l';
+					color1 = '#B40431';//'#BD1550';
+				    color2 = '#DF0101';//'#E97F02';
+					cur_ = 0;
+				}
 				//add game edges
 				for (var key in games)
 				{
@@ -171,7 +208,7 @@ function addNodes()
 						}
 					}
 				} 
-
+				myAxis.counter = 0;
 				d+=1;
 				if(d >= numDays)
 					graph.drawEdges(group,5);
@@ -185,7 +222,7 @@ function addNodes()
 function loadPlayers()
 {
 	// load a resource
-	graph.loadInformation('../../data.txt',
+	graph.loadInformation('data.txt',
 		// Function when resource is loaded
 		function ( players_data ) {
 			var myColor = new ColorNode(players_data.length);
@@ -216,13 +253,14 @@ function render() {
 	camera.lookAt( scene.position );
 	camera.updateMatrixWorld();
 	// find intersections
-	//controls.update();
+	controls.update();
 
-	if(isDragX)
+	/*if(isDragX)
 		group.rotation.y += ( targetRotation - group.rotation.y) * 0.05;
 	if(isDragY)
 		group.rotation.x += ( targetRotation - group.rotation.x) * 0.05;
-
+	*/
+	
 	//var vector = new THREE.Vector3( mouse.x, mouse.y, - 1 ).unproject( camera );
 	var direction = new THREE.Vector3( 0, 0, -1 ).transformDirection( camera.matrixWorld );
 	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
@@ -236,7 +274,7 @@ function render() {
 			if ( INTERSECTED && INTERSECTED['name'] == 'node'){
 				//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 				INTERSECTED.material.opacity = INTERSECTED.currentopacity
-				graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
+				graph.findSame(INTERSECTED,INTERSECTED.currentopacity, 1);
 				$('#players').html('Select a player');
 			}
 
@@ -247,7 +285,11 @@ function render() {
 				INTERSECTED.material.opacity = 1;
 				//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
 				//INTERSECTED.material.emissive.setHex( 0xff0000 );
-				name =graph.findSame(INTERSECTED,1, new THREE.Vector3( 4, 4, 4 ) );
+				pname = graph.findSame(INTERSECTED,1, 2 );
+				name = pname.player.fullName();
+				name += '<br/> <small id="text">Total Tweets: </small><small id="tt">' + (pname.info['total'] *10)     + '</small>';
+				name += '<br/> <small id="text">Positive Tweets: <small id="pos">' + (pname.info['pos'] *10)          + '</small>';
+				name += '<br/> <small id="text">Negative Tweets: </small><small id="neg">' + (pname.info['neg'] *10) + '</small>';
 				$('#players').html(name);
 			}
 
@@ -258,8 +300,8 @@ function render() {
 		if ( INTERSECTED && INTERSECTED['name'] == 'node'){
 			//INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 			INTERSECTED.material.opacity = INTERSECTED.currentopacity
-			graph.findSame(INTERSECTED,INTERSECTED.currentopacity, new THREE.Vector3( 1, 1, 1 ) );
-			$('#players').html('Select a player');
+			graph.findSame(INTERSECTED,INTERSECTED.currentopacity, 1 );
+			$('#players').html('Select a Player:');
 
 		}
 		INTERSECTED = null;
@@ -282,6 +324,26 @@ function onWindowResize() {
 
 }
 
+function onDocumentKeyDown(event)
+{
+	var delta = 200;
+	event = event || window.event;
+	var keycode = event.keyCode;
+	switch(keycode){
+		case 37 : //left arrow
+			group.position.x = group.position.x + delta;
+		break;
+		case 38 : // up arrow
+			group.position.y = group.position.y - delta;
+		break;
+		case 39 : // right arrow 
+			group.position.x = group.position.x - delta;
+		break;
+		case 40 : //down arrow
+			group.position.y = group.position.y + delta;
+		break;
+	}
+}
 function onDocumentMouseMove( event ) {
 
 	event.preventDefault();
@@ -305,7 +367,7 @@ function onDocumentMouseMove( event ) {
 function onDocumentMouseDown( event ) {
 
 	event.preventDefault();
-	
+
 	isDragX = true;
 	if(event.button == 2){
 		isDragY = true;
@@ -338,34 +400,18 @@ function onDocumentMouseOut( event ) {
 }
 
 function onDocumentTouchStart( event ) {
-
 	if ( event.touches.length == 1 ) {
-
 		event.preventDefault();
 		mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
 		mouseYOnMouseDown = event.touches[ 0 ].pageY - windowHalfY;
 		targetRotationOnMouseDown = targetRotation;
-
 	}
-	else
-	{
-		console.log('s');
-	}
-
 }
 
 function onDocumentTouchMove( event ) {
-
 	if ( event.touches.length == 1 ) {
-
 		event.preventDefault();
-
 		mouseX = event.touches[ 0 ].pageX - windowHalfX;
 		targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
-
-	}
-else
-	{
-		console.log('s');
 	}
 }

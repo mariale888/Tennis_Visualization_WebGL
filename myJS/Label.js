@@ -40,7 +40,7 @@ THREE.Label = function(text, parameters) {
 	  xc.fillStyle = 'black';
     xc.fillText(text, 0, 0);
 
-    var geometry = new THREE.BoxGeometry(len, 60, 0);
+    var geometry = new THREE.BoxGeometry(len, 90, 0);
     var xm = new THREE.MeshBasicMaterial({map: new THREE.Texture(labelCanvas), transparent: true});
     xm.map.needsUpdate = true;
 
